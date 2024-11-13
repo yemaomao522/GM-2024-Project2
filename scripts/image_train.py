@@ -1,7 +1,8 @@
 """
 Train a diffusion model on images.
 """
-
+import torch
+import wandb
 import argparse
 
 from improved_diffusion import dist_util, logger
@@ -18,15 +19,27 @@ from improved_diffusion.train_util import TrainLoop
 
 def main():
     args = create_argparser().parse_args()
-
+    
+    
     dist_util.setup_dist()
     logger.configure()
 
+    # Determine device and log it
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.log(f"Using device: {device}")
+    
     logger.log("creating model and diffusion...")
     model, diffusion = create_model_and_diffusion(
         **args_to_dict(args, model_and_diffusion_defaults().keys())
     )
     model.to(dist_util.dev())
+
+    # Calculate and log the model parameters
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    logger.log(f"Total parameters: {total_params}")
+    logger.log(f"Trainable parameters: {trainable_params}")
+    
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 
     logger.log("creating data loader...")
@@ -55,7 +68,7 @@ def main():
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
     ).run_loop()
-
+    TrainLoop.save()
 
 def create_argparser():
     defaults = dict(
@@ -68,7 +81,7 @@ def create_argparser():
         microbatch=-1,  # -1 disables microbatches
         ema_rate="0.9999",  # comma-separated list of EMA values
         log_interval=10,
-        save_interval=10000,
+        save_interval=10,
         resume_checkpoint="",
         use_fp16=False,
         fp16_scale_growth=1e-3,

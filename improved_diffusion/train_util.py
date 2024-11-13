@@ -1,7 +1,7 @@
 import copy
 import functools
 import os
-
+import wandb
 import blobfile as bf
 import numpy as np
 import torch as th
@@ -166,7 +166,13 @@ class TrainLoop:
             batch, cond = next(self.data)
             self.run_step(batch, cond)
             if self.step % self.log_interval == 0:
+                # 从 logger 中获取所有当前的键值对
+                log_data = logger.logkvs()
+                # 将这些键值对记录到 wandb
+                wandb.log(log_data)
+                # 打印并清空日志数据
                 logger.dumpkvs()
+                
             if self.step % self.save_interval == 0:
                 self.save()
                 # Run for a finite amount of time in integration tests.
