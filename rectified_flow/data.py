@@ -46,11 +46,15 @@ class DatasetForRectifiedFlow(ImageFolder):
         return input_image, time_step, target, (sample - noise)
 
 
-def get_dataloader():
+def get_dataloader(noise_cache_dir: str, batch_size: int, shuffle: bool=False) -> DataLoader:
+    """Load the dataloader.
+    Args:
+        noise_cache_dir: the path to the cache of the noise images.
+    """
     # The training images are black-white 3x255x255 images
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Lambda(lambda x: torch.nn.functional.pad(x[:1], (0, 1, 0, 1)))
     ])
-    data = DatasetForRectifiedFlow('noise_cache', 'subclass12', transform=transform)
-    dataloader = DataLoader(data, batch_size=2)
+    data = DatasetForRectifiedFlow(noise_cache_dir, 'subclass12', transform=transform)
+    return DataLoader(data, batch_size=batch_size, shuffle=shuffle)
