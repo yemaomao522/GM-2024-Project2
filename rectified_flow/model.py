@@ -25,26 +25,35 @@ class ConditionalUNet(VectorField):
     def __init__(self, num_classes: int):
         super().__init__()
         self.class_emb = nn.Embedding(num_classes, 256 * 256)
-        self.encoder1 = self.double_conv_constructor(3, 32)
-        self.encoder2 = self.double_conv_constructor(32, 64)
-        self.encoder3 = self.double_conv_constructor(64, 128)
-        self.encoder4 = self.double_conv_constructor(128, 256)
-        self.bottleneck = self.double_conv_constructor(256, 512)
-        self.upconv4 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
-        self.decoder4 = self.double_conv_constructor(512, 256)
-        self.upconv3 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
-        self.decoder3 = self.double_conv_constructor(256, 128)
-        self.upconv2 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
-        self.decoder2 = self.double_conv_constructor(128, 64)
-        self.upconv1 = nn.ConvTranspose2d(64, 32, kernel_size=2, stride=2)
-        self.decoder1 = self.double_conv_constructor(64, 32)
-        self.pred_head = nn.Conv2d(32, 1, kernel_size=1)
+        self.encoder1 = self.double_conv_constructor(3, 48)
+        self.encoder2 = self.double_conv_constructor(48, 96)
+        self.encoder3 = self.double_conv_constructor(96, 192)
+        self.encoder4 = self.double_conv_constructor(192, 384)
+        self.bottleneck = self.double_conv_constructor(384, 768)
+        self.upconv4 = self.upsample_constructor(768, 384)
+        self.decoder4 = self.double_conv_constructor(768, 384)
+        self.upconv3 = self.upsample_constructor(384, 192)
+        self.decoder3 = self.double_conv_constructor(384, 192)
+        self.upconv2 = self.upsample_constructor(192, 96)
+        self.decoder2 = self.double_conv_constructor(192, 96)
+        self.upconv1 = self.upsample_constructor(96, 48)
+        self.decoder1 = self.double_conv_constructor(96, 48)
+        self.pred_head = nn.Conv2d(48, 1, kernel_size=1)
+    
+    def upsample_constructor(self, in_channels: int, out_channels: int):
+        return nn.Sequential(
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
     
     def double_conv_constructor(self, in_channels: int, out_channels: int):
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
     
@@ -70,3 +79,12 @@ class ConditionalUNet(VectorField):
         input_tensor = self.decoder1(input_tensor)
         
         return self.pred_head(input_tensor)
+    
+    def initialize(self):
+        for module in self.modules():
+            if isinstance(module, (nn.Conv2d, nn.ConvTranspose2d)):
+                nn.init.xavier_normal_(module.weight)
+                nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.BatchNorm2d):
+                nn.init.constant_(module.weight, 1)
+                nn.init.constant_(module.bias, 0)
