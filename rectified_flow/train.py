@@ -31,7 +31,7 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
     for epoch in tqdm.tqdm(range(num_train_epochs), desc='Epoch'):
         for i, (x, t, y, v) in enumerate(tqdm.tqdm(train_dataloader, desc='Step')):
             x = x.cuda()
-            t = t.cuda()
+            t = t.cuda().float()
             y = y.cuda()
             v = v.cuda()
             if i % gradient_accumulate_steps == 0:

@@ -36,7 +36,7 @@ class DatasetForRectifiedFlow(ImageFolder):
     def load_noise(self, index: int) -> torch.Tensor:
         image = Image.open(os.path.join(self.noise_cache_dir, f'noise_{index}.png'))
         image_array = np.array(image)[np.newaxis, :, :]
-        return torch.from_numpy(image_array / 255)
+        return torch.from_numpy((image_array / 255)).float()
     
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, float, int, torch.Tensor]:
         sample, target = super().__getitem__(index)
