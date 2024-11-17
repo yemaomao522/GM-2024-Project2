@@ -20,8 +20,11 @@ class CustomConfig:
 config = vars(CustomConfig(
     num_train_epochs=2,
     learning_rate=1e-4,
-    batch_size=1,
+    batch_size=4,
     gradient_accumulate_steps=8,
+    wandb_proj_name='debug',
+    wandb_team_name='GM-2024-Project2',
+    wandb_run_name='lumen-team'
 ))
 
 
