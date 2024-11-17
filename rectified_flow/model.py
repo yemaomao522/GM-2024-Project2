@@ -51,7 +51,7 @@ class ConditionalUNet(VectorField):
     def forward(self, x: torch.Tensor, y: torch.LongTensor, t: torch.Tensor):
         class_emb = self.class_emb(y).reshape(x.shape)
         time_emb = t[:, None, None, None].expand(x.shape)
-        input_tensor = torch.stack([x, class_emb, time_emb], dim=1)
+        input_tensor = torch.concat([x, class_emb, time_emb], dim=1)
         
         cache1 = self.encoder1(input_tensor)
         cache2 = self.encoder2(nn.functional.max_pool2d(cache1, 2))
