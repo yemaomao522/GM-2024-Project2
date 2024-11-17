@@ -18,21 +18,22 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
         wandb_team_name (str, Optional): the name of the wandb group.
         wandb_run_name (str, Optional): the name of the wandb run.
     """
-    wandb.init(
-        project=wandb_proj_name,
-        entity=wandb_team_name,
-        name=wandb_run_name
-    )
+    if wandb_proj_name:
+        wandb.init(
+            project=wandb_proj_name,
+            entity=wandb_team_name,
+            name=wandb_run_name
+        )
     global_step = 0
     real_batch_size = train_dataloader.batch_size * gradient_accumulate_steps
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     temp_loss = 0
     for epoch in tqdm.tqdm(range(num_train_epochs), desc='Epoch'):
         for i, (x, t, y, v) in enumerate(tqdm.tqdm(train_dataloader, desc='Step')):
-            x = x.to(model.device)
-            t = t.to(model.device)
-            y = y.to(model.device)
-            v = v.to(model.device)
+            x = x.cuda()
+            t = t.cuda()
+            y = y.cuda()
+            v = v.cuda()
             if i % gradient_accumulate_steps == 0:
                 optimizer.zero_grad()
                 temp_loss = 0
@@ -44,8 +45,9 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
             if (i + 1) % gradient_accumulate_steps == 0:
                 optimizer.step()
                 global_step += 1
-                wandb.log({
-                    'global_step': global_step,
-                    'loss': temp_loss
-                })
+                if wandb_team_name:
+                    wandb.log({
+                        'global_step': global_step,
+                        'loss': temp_loss
+                    })
     wandb.finish()
