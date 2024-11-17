@@ -29,6 +29,10 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
     temp_loss = 0
     for epoch in tqdm.tqdm(range(num_train_epochs), desc='Epoch'):
         for i, (x, t, y, v) in enumerate(tqdm.tqdm(train_dataloader, desc='Step')):
+            x = x.to(model.device)
+            t = t.to(model.device)
+            y = y.to(model.device)
+            v = v.to(model.device)
             if i % gradient_accumulate_steps == 0:
                 optimizer.zero_grad()
                 temp_loss = 0
