@@ -29,6 +29,7 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     temp_loss = 0
     for epoch in tqdm.tqdm(range(num_train_epochs), desc='Epoch'):
+        num_steps = len(train_dataloader)
         for i, (x, t, y, v) in enumerate(tqdm.tqdm(train_dataloader, desc='Step')):
             x = x.cuda()
             t = t.cuda().float()
@@ -42,7 +43,7 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
             loss = torch.sum(loss_items)
             temp_loss += loss.detach().cpu().item()
             loss.backward()
-            if (i + 1) % gradient_accumulate_steps == 0:
+            if (i + 1) % gradient_accumulate_steps == 0 or i + 1 == num_steps:
                 optimizer.step()
                 global_step += 1
                 if wandb_team_name:
