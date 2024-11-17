@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import nn
 from abc import ABC, abstractmethod
@@ -16,6 +17,23 @@ class VectorField(ABC, nn.Module):
             t (Tensor): the timesteps, t in [0, 1].
         """
         pass
+    
+    @torch.no_grad()
+    def generate(self, x: torch.Tensor, y: torch.LongTensor, num_time_steps: int) -> torch.Tensor:
+        """Transfer from noises to target images.
+        Args:
+            x (Tensor): the noises, in the shape of (batch, channel, height, width).
+            y (Tensor): the labels, in the shape of (batch,).
+            num_time_steps (int): the number of forward steps.
+        Returns:
+            The generated images, in the same shape as x.
+        """
+        time_step_size = 1 / num_time_steps
+        for t in np.linspace(0, 1, num_time_steps, endpoint=False):
+            t = torch.ones(x.shape[0]) * t.item()
+            v = self.forward(x, y, t)
+            x = x + v * time_step_size
+        return x
 
 
 class ConditionalUNet(VectorField):
