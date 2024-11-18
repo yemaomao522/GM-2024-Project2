@@ -41,7 +41,7 @@ class VectorField(ABC, nn.Module):
 class ConditionalUNet(VectorField):
     """Parameterize the vector field as a UNet.
     It expects a batch of 1x256x256 Tensors (images) as the input.
-    """    
+    """
     def __init__(self, num_classes: int):
         super().__init__()
         self.class_emb = nn.Embedding(num_classes, 256 * 256)
@@ -61,11 +61,7 @@ class ConditionalUNet(VectorField):
         self.pred_head = nn.Conv2d(48, 1, kernel_size=1)
     
     def upsample_constructor(self, in_channels: int, out_channels: int):
-        return nn.Sequential(
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
+        return nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
     
     def double_conv_constructor(self, in_channels: int, out_channels: int):
         return nn.Sequential(
