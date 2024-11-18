@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import tqdm
 from torch import nn
 from abc import ABC, abstractmethod
 
@@ -29,10 +30,11 @@ class VectorField(ABC, nn.Module):
             The generated images, in the same shape as x.
         """
         time_step_size = 1 / num_time_steps
-        for t in np.linspace(0, 1, num_time_steps, endpoint=False):
+        for t in tqdm.tqdm(np.linspace(0, 1, num_time_steps, endpoint=False), desc="Generate"):
             t = torch.ones(x.shape[0]) * t.item()
+            t = t.cuda()
             v = self.forward(x, y, t)
-            x = x + v * time_step_size
+            x = torch.clip(x + v * time_step_size, 0, 1)
         return x
 
 
