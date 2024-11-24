@@ -41,12 +41,12 @@ sampling_steps = config.pop('sampling_steps')
 
 
 if resume_from_checkpoint:
-    model = TimeConditionalUnet(12)
+    model = TimeConditionalUnet(64)
     checkpoint = torch.load(resume_from_checkpoint)
     model.load_state_dict(checkpoint)
     model.cuda()
 else:
-    model = TimeConditionalUnet(12).cuda()
+    model = TimeConditionalUnet(64).cuda()
     model.initialize()
     print(sum(p.numel() for p in model.parameters()))
     train_dataloader = get_dataloader('noise_cache', batch_size=batch_size, shuffle=True, sampling_steps=sampling_steps)
