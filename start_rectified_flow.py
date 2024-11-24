@@ -49,12 +49,12 @@ else:
     model = TimeConditionalUnet(64).cuda()
     model.initialize()
     print(sum(p.numel() for p in model.parameters()))
-    train_dataloader = get_dataloader('noise_cache', batch_size=batch_size, shuffle=True, sampling_steps=sampling_steps)
+    train_dataloader = get_dataloader('noise_cache', image_size=64, batch_size=batch_size, shuffle=True, sampling_steps=sampling_steps)
     train_1_rectified(model, train_dataloader, **config)
     torch.save(model.state_dict(), output_dir)
 
 
-x = ((np.random.randn(12, 1, 256, 256).clip(-1, 1) + 1) / 2).astype(np.float32)
+x = ((np.random.randn(12, 1, 64, 64).clip(-1, 1) + 1) / 2).astype(np.float32)
 x = torch.from_numpy(x).cuda()
 y = torch.LongTensor([i for i in range(12)]).cuda()
 pred = model.generate(x, y, 100)
