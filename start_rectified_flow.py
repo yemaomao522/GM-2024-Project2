@@ -1,11 +1,11 @@
 import numpy as np
+import os
 import torch
 from dataclasses import dataclass, field
 from PIL import Image
 from rectified_flow.models import TimeConditionalUnet
 from rectified_flow.data import get_dataloader
 from rectified_flow.train import train_1_rectified
-from torch.utils.data import DataLoader
 from typing import Optional
 
 
@@ -29,10 +29,10 @@ config = vars(CustomConfig(
     batch_size=16,
     gradient_accumulate_steps=8,
     sampling_steps=100,
-    output_dir='models/rectified-flow-1.pth',
+    output_dir='models/Normal.pth',
     wandb_proj_name='GM-2024-Project2',
     wandb_team_name='lumen-team',
-    wandb_run_name='flow-simple-y',
+    wandb_run_name='Normal',
 ))
 output_dir = config.pop('output_dir')
 batch_size = config.pop('batch_size')
@@ -51,13 +51,14 @@ else:
     print(sum(p.numel() for p in model.parameters()))
     train_dataloader = get_dataloader('noise_cache', image_size=64, batch_size=batch_size, shuffle=True, sampling_steps=sampling_steps)
     train_1_rectified(model, train_dataloader, **config)
+    os.makedirs(os.path.dirname(output_dir), exist_ok=True)
     torch.save(model.state_dict(), output_dir)
 
 
 x = ((np.random.randn(12, 1, 64, 64).clip(-1, 1) + 1) / 2).astype(np.float32)
 x = torch.from_numpy(x).cuda()
 y = torch.LongTensor([i for i in range(12)]).cuda()
-pred = model.generate(x, y, 100)
+pred = model.generate(x, y, sampling_steps)
 
 for i in range(12):
     image = pred[i, 0]

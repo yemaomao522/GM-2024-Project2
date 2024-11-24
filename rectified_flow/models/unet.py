@@ -30,7 +30,7 @@ class TimeConditionalUnet(VectorField):
     def construct_upsample(self, in_channels: int, out_channels: int):
         return nn.Sequential(
             nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2),
-            nn.BatchNorm2d(2),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU()
         )
     
@@ -81,13 +81,15 @@ class TimeConditionalUnet(VectorField):
         y_emb[y==-1] = 0
         time_emb = self.sin_cos_embedding(t, self.time_emb_dim)
         time_emb += y_emb
-        x1 = self.downconv1(x)
-        x2 = self.downconv2(self.downpool1(x1))
-        x3 = self.downconv3(self.downpool2(x2))
-        x = self.middle(self.downpool3(x3))
-        x = self.upconv3(torch.concat((self.upsample3(x), x3), dim=1))
-        x = self.upconv2(torch.concat((self.upsample2(x), x2), dim=1))
-        x = self.upconv1(torch.concat((self.upsample1(x), x1), dim=1))
+        # down
+        x1 = self.downconv1(x, time_emb)
+        x2 = self.downconv2(self.downpool1(x1), time_emb)
+        x3 = self.downconv3(self.downpool2(x2), time_emb)
+        x = self.middle(self.downpool3(x3), time_emb)
+        # up
+        x = self.upconv3(torch.concat((self.upsample3(x), x3), dim=1), time_emb)
+        x = self.upconv2(torch.concat((self.upsample2(x), x2), dim=1), time_emb)
+        x = self.upconv1(torch.concat((self.upsample1(x), x1), dim=1), time_emb)
         return self.out_trans(x)
     
     def initialize(self):

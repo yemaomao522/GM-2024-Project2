@@ -61,7 +61,7 @@ def get_dataloader(noise_cache_dir: str, batch_size: int, image_size: int, shuff
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Lambda(lambda x: torch.nn.functional.pad(x[:1], (0, 1, 0, 1))),
-        transforms.Lambda(lambda x: torch.nn.functional.max_pool2d(x, kernel_size=256 // image_size))
+        transforms.Lambda(lambda x: -torch.nn.functional.max_pool2d(-x, kernel_size=256 // image_size))  # "min-pooling"
     ])
-    data = DatasetForRectifiedFlow(noise_cache_dir, sampling_steps, 'subclass12', transform=transform)
+    data = DatasetForRectifiedFlow(noise_cache_dir, image_size, sampling_steps, 'subclass12', transform=transform)
     return DataLoader(data, batch_size=batch_size, shuffle=shuffle)
