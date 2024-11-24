@@ -1,7 +1,7 @@
 import tqdm
 import torch
 import wandb
-from .model import VectorField
+from .models import VectorField
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import ExponentialLR
