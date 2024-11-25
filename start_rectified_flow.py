@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('config')
 args = parser.parse_args()
 with open(args.config, 'r') as f:
-    config = vars(CustomConfig(json.load(f)))
+    config = vars(CustomConfig(**json.load(f)))
 output_path = config.pop('output_path')
 batch_size = config.pop('batch_size')
 resume_from_checkpoint = config.pop('resume_from_checkpoint')
