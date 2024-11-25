@@ -1,4 +1,5 @@
 import argparse
+import json
 import numpy as np
 import os
 import rectified_flow.models
@@ -33,7 +34,9 @@ class CustomConfig:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config')
-config = vars(CustomConfig(parser.parse_args().config))
+args = parser.parse_args()
+with open(args.config, 'r') as f:
+    config = vars(CustomConfig(json.load(f)))
 output_path = config.pop('output_path')
 batch_size = config.pop('batch_size')
 resume_from_checkpoint = config.pop('resume_from_checkpoint')
