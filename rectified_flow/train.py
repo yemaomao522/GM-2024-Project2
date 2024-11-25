@@ -30,6 +30,7 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     scheduler = ExponentialLR(optimizer, gamma=0.8)
     temp_loss = 0
+    loss_fn = torch.nn.MSELoss()
     for epoch in tqdm.tqdm(range(num_train_epochs), desc='Epoch'):
         num_steps = len(train_dataloader)
         for i, (x, t, y, v) in enumerate(tqdm.tqdm(train_dataloader, desc='Step')):
@@ -41,8 +42,7 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
                 optimizer.zero_grad()
                 temp_loss = 0
             pred = model.forward(x, y, t)
-            loss_items = torch.norm(v - pred, p=2, dim=(1, 2, 3)) / real_batch_size
-            loss = torch.sum(loss_items)
+            loss = loss_fn(pred - v) * (x.shape[0] / real_batch_size)
             temp_loss += loss.detach().cpu().item()
             loss.backward()
             if (i + 1) % gradient_accumulate_steps == 0 or i + 1 == num_steps:
