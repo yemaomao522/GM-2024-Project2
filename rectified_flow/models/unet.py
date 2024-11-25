@@ -18,10 +18,14 @@ class DoubleConv(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU()
         )
+        if in_channels != out_channels:
+            self.residual = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        else:
+            self.residual = nn.Identity()
     
     def forward(self, x: Tensor, t: Tensor):
-        x = x + self.time_trans(t)[:, :, None, None]
-        return self.conv(x)
+        z = x + self.time_trans(t)[:, :, None, None]
+        return self.conv(z) + self.residual(x)
 
 
 class TimeConditionalUnet(VectorField):
@@ -61,7 +65,7 @@ class TimeConditionalUnet(VectorField):
         self.upsample1 = self.construct_upsample(base_dim * 4, base_dim * 2)
         self.upconv1 = DoubleConv(base_dim * 4, base_dim * 2, self.time_emb_dim)
         # 2Dx64x64 -> 1x64x64
-        self.out_trans = nn.Conv2d(base_dim * 2, 1, kernel_size=3, padding=1)
+        self.out_trans = DoubleConv(base_dim * 2, 1, self.time_emb_dim)
     
     def sin_cos_embedding(self, x: Tensor, dim: int):
         """Generate sin-cos embedding for timesteps.
@@ -90,7 +94,7 @@ class TimeConditionalUnet(VectorField):
         x = self.upconv3(torch.concat((self.upsample3(x), x3), dim=1), time_emb)
         x = self.upconv2(torch.concat((self.upsample2(x), x2), dim=1), time_emb)
         x = self.upconv1(torch.concat((self.upsample1(x), x1), dim=1), time_emb)
-        return self.out_trans(x)
+        return self.out_trans(x, time_emb)
     
     def initialize(self):
         for m in self.modules():
