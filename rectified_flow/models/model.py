@@ -34,5 +34,5 @@ class VectorField(ABC, nn.Module):
             t = torch.ones(x.shape[0]) * t.item()
             t = t.cuda()
             v = self.forward(x, y, t)
-            x = torch.clip(x + v * time_step_size, 0, 1)
-        return x
+            x = x + v * time_step_size
+        return torch.clip(x, 0, 1)
