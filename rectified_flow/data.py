@@ -25,7 +25,7 @@ class DatasetForRectifiedFlow(ImageFolder):
     def detect_cache_dir(self, num: int, cache_dir: str) -> bool:
         if not os.path.exists(cache_dir):
             return False
-        return all(os.path.exists(os.path.join(cache_dir, f'noise_{i}.png')) for i in range(num))
+        return all(os.path.exists(os.path.join(cache_dir, f'noise_{i}.npy')) for i in range(num))
     
     def generate_noises(self, num: int, cache_dir: str):
         logging.info(f"Generate noise images and save then into {cache_dir}.")
