@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import os
+import pickle
 import random
 import torch
 import tqdm
@@ -30,19 +31,16 @@ class DatasetForRectifiedFlow(ImageFolder):
         logging.info(f"Generate noise images and save then into {cache_dir}.")
         os.makedirs(cache_dir, exist_ok=True)
         for i in tqdm.tqdm(range(num)):
-            noise = (np.random.randn(self.image_size, self.image_size).clip(-1, 1) + 1) / 2
-            noise = (noise * 255).astype(np.uint8)
-            image = Image.fromarray(noise, mode='L')
-            image.save(os.path.join(cache_dir, f'noise_{i}.png'))
+            noise = np.random.randn(1, self.image_size, self.image_size).astype(np.float32)
+            np.save(os.path.join(cache_dir, f'noise_{i}.npy'), noise)
     
     def load_noise(self, index: int) -> torch.Tensor:
-        image = Image.open(os.path.join(self.noise_cache_dir, f'noise_{index}.png'))
-        image_array = np.array(image)[np.newaxis, :, :]
-        return torch.from_numpy((image_array / 255)).float()
+        image = np.load(os.path.join(self.noise_cache_dir, f'noise_{index}.npy'))
+        return torch.from_numpy(image)
     
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, float, int, torch.Tensor]:
         sample, target = super().__getitem__(index)
-        time_step = random.random() if self.sampling_steps is None else random.randint(0, self.sampling_steps - 1) / self.sampling_steps
+        time_step = random.random() if self.sampling_steps is None else (random.randint(0, self.sampling_steps - 1) / self.sampling_steps)
         noise = self.load_noise(index)
         input_image = sample * time_step + noise * (1 - time_step)
         return input_image, time_step, target, (sample - noise)
