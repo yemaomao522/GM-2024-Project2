@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torch.optim import AdamW, lr_scheduler
 from typing import Optional, Dict
 
-def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_train_epochs: int, learning_rate: float, gradient_accumulate_steps: int, wandb_proj_name: Optional[str]=None, wandb_team_name: Optional[str]=None, wandb_run_name: Optional[str]=None, scheduler_cls: Optional[str]=None, scheduler_kwargs: Optional[Dict]=None):
+def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_train_epochs: int, learning_rate: float, gradient_accumulate_steps: int, wandb_proj_name: Optional[str]=None, wandb_team_name: Optional[str]=None, wandb_run_name: Optional[str]=None, scheduler_cls: Optional[str]=None, scheduler_kwargs: Optional[Dict]=None, mix_unconditional: bool=False):
     """Randomly matching noises with target images.
     Args:
         model (VectorField): any instance of vector field models.
@@ -17,6 +17,9 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
         wandb_proj_name (str, Optional): the name of the project; set it to None (default) to disable reporting to wandb.
         wandb_team_name (str, Optional): the name of the wandb group.
         wandb_run_name (str, Optional): the name of the wandb run.
+        scheduler_cls (str, Optional): the scheduler type; leave it as None to disable scheduler.
+        scheduler_kwargs (Dict, Optional): the arguments of the scheduler.
+        mix_unconditional (bool): whether to mix unconditional tasks during training (following https://github.com/TongTong313/rectified-flow/blob/main/train.py).
     """
     if wandb_proj_name:
         wandb.init(
@@ -36,13 +39,18 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
     for epoch in tqdm.tqdm(range(num_train_epochs), desc='Epoch'):
         num_steps = len(train_dataloader)
         for i, (x, t, y, v) in enumerate(tqdm.tqdm(train_dataloader, desc='Step')):
+            if i % gradient_accumulate_steps == 0:
+                optimizer.zero_grad()
+                temp_loss = 0
             x = x.cuda()
             t = t.cuda().float()
             y = y.cuda()
             v = v.cuda()
-            if i % gradient_accumulate_steps == 0:
-                optimizer.zero_grad()
-                temp_loss = 0
+            if mix_unconditional:
+                x = torch.concat([x, x.clone()], dim=0)
+                t = torch.concat([t, t.clone()], dim=0)
+                y = torch.concat([y, torch.full_like(y, -1)], dim=0)
+                v = torch.concat([v, v.clone()], dim=0)
             pred = model.forward(x, y, t)
             loss = loss_fn(pred, v) / real_batch_size
             temp_loss += loss.detach().cpu().item()
@@ -53,7 +61,8 @@ def train_1_rectified(model: VectorField, train_dataloader: DataLoader, num_trai
                 if wandb_team_name:
                     wandb.log({
                         'global_step': global_step,
-                        'loss': temp_loss
+                        'loss': temp_loss,
+                        'epoch': epoch + i / num_steps
                     })
         if scheduler is not None:
             scheduler.step()

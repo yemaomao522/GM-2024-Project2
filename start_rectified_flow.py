@@ -1,9 +1,10 @@
+import argparse
 import numpy as np
 import os
+import rectified_flow.models
 import torch
 from dataclasses import dataclass, field
 from PIL import Image
-from rectified_flow.models import TimeConditionalUnet
 from rectified_flow.data import get_dataloader
 from rectified_flow.train import train_1_rectified
 from typing import Optional, Dict
@@ -15,8 +16,9 @@ class CustomConfig:
     learning_rate: float
     batch_size: int
     gradient_accumulate_steps: int
-    output_dir: str
+    output_path: str
     image_size: int = field(default=64)
+    discrete_training_steps: bool = field(default=False)
     sampling_steps: Optional[int] = field(default=None)
     wandb_proj_name: Optional[str] = field(default=None)
     wandb_team_name: Optional[str] = field(default=None)
@@ -24,43 +26,38 @@ class CustomConfig:
     resume_from_checkpoint: Optional[str] = field(default=None)
     scheduler_cls: Optional[str] = None
     scheduler_kwargs: Optional[Dict] = None
+    architecture: str = field(default='TimeConditionalUnet')
+    architecture_kwargs: Dict = field(default_factory=lambda: {'base_dim': 64})
+    mix_unconditional: bool = field(default=False)
 
 
-config = vars(CustomConfig(
-    num_train_epochs=60,
-    learning_rate=1e-3,
-    batch_size=16,
-    gradient_accumulate_steps=1,
-    sampling_steps=1,
-    image_size=32,
-    output_dir='models/RandomT.pth',
-    wandb_proj_name='GM-2024-Project2',
-    wandb_team_name='lumen-team',
-    wandb_run_name='RandomT',
-    scheduler_cls='StepLR',
-    scheduler_kwargs={'step_size': 20, 'gamma': 0.1}
-))
-output_dir = config.pop('output_dir')
+parser = argparse.ArgumentParser()
+parser.add_argument('config')
+config = vars(CustomConfig(parser.parse_args().config))
+output_path = config.pop('output_path')
 batch_size = config.pop('batch_size')
 resume_from_checkpoint = config.pop('resume_from_checkpoint')
 sampling_steps = config.pop('sampling_steps')
 image_size = config.pop('image_size')
+architecture = config.pop('architecture')
+architecture_kwargs = config.pop('architecture_kwargs')
+discrete_training_steps = config.pop('discrete_training_steps')
 
 
+model = getattr(rectified_flow.models, architecture)(**architecture_kwargs)
 if resume_from_checkpoint:
-    model = TimeConditionalUnet(64)
     checkpoint = torch.load(resume_from_checkpoint)
     model.load_state_dict(checkpoint)
     model.cuda()
 else:
-    model = TimeConditionalUnet(64).cuda()
+    model.cuda()
     model.initialize()
     print(sum(p.numel() for p in model.parameters()))
     # Do not use sampling step this time
     train_dataloader = get_dataloader(f'noise_cache_{image_size}', image_size=image_size, batch_size=batch_size, shuffle=True, sampling_steps=sampling_steps)
     train_1_rectified(model, train_dataloader, **config)
-    os.makedirs(os.path.dirname(output_dir), exist_ok=True)
-    torch.save(model.state_dict(), output_dir)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    torch.save(model.state_dict(), output_path)
 
 
 x = np.random.randn(12, 1, image_size, image_size).astype(np.float32)
