@@ -1,16 +1,16 @@
 {
-    "num_train_epochs": 60,
-    "learning_rate": 1e-3,
+    "num_train_epochs": 50,
+    "learning_rate": 1e-4,
     "batch_size": 16,
     "gradient_accumulate_steps": 1,
     "output_path": "models/Reproduce.pth",
     "image_size": 64,
     "sampling_steps": 10,
     "discrete_training_steps": false,
-    "mix_conditional": true,
+    "mix_unconditional": true,
     "scheduler_cls": "StepLR",
     "scheduler_kwargs": {
-        "step_size": 20,
+        "step_size": 25,
         "gamma": 0.1
     },
     "architecture": "MiniUnet",
