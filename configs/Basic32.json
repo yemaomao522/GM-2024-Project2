@@ -1,0 +1,24 @@
+{
+    "num_train_epochs": 60,
+    "learning_rate": 1e-3,
+    "batch_size": 32,
+    "gradient_accumulate_steps": 4,
+    "output_path": "models/Basic32.pth",
+    "image_size": 32,
+    "discrete_training_steps": true,
+    "sampling_steps": 10,
+    "wandb_proj_name": "GM-2024-Project2",
+    "wandb_team_name": "lumen-team",
+    "wandb_run_name": "Basic32",
+    "resume_from_checkpoint": false,
+    "scheduler_cls": "StepLR",
+    "scheduler_kwargs": {
+        "step_size": 20,
+        "gamma": 0.1
+    },
+    "architecture": "TimeConditionalUnet",
+    "architecture_kwargs": {
+        "base_dim": 64
+    },
+    "mix_unconditional": true
+}
