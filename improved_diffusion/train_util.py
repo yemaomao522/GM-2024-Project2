@@ -167,7 +167,7 @@ class TrainLoop:
             self.run_step(batch, cond)
             if self.step % self.log_interval == 0:
                 # 从 logger 中获取所有当前的键值对
-                log_data = logger.logkvs()
+                log_data = logger.getkvs()
                 # 将这些键值对记录到 wandb
                 wandb.log(log_data)
                 # 打印并清空日志数据
