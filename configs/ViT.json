@@ -1,0 +1,28 @@
+{
+    "num_train_epochs": 1000,
+    "learning_rate": 1e-4,
+    "batch_size": 32,
+    "gradient_accumulate_steps": 4,
+    "output_path": "models/ViT.pth",
+    "image_size": 64,
+    "discrete_training_steps": true,
+    "sampling_steps": 10,
+    "wandb_proj_name": "GM-2024-Project2",
+    "wandb_team_name": "lumen-team",
+    "wandb_run_name": "ViT",
+    "resume_from_checkpoint": false,
+    "scheduler_cls": "StepLR",
+    "scheduler_kwargs": {
+        "step_size": 200,
+        "gamma": 0.1
+    },
+    "architecture": "TimeConditionalViT",
+    "architecture_kwargs": {
+        "hidden_dim": 512,
+        "nhead": 8,
+        "num_layers": 6,
+        "img_size": 64,
+        "log_patch_size": 4
+    },
+    "mix_unconditional": false
+}
