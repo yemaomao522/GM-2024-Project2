@@ -19,6 +19,11 @@ from improved_diffusion.train_util import TrainLoop
 
 def main():
     args = create_argparser().parse_args()
+    wandb.init(
+        project='GM-2024-Project2',
+        entity='lumen-team',
+        name='Diffusion'
+    )
     
     
     dist_util.setup_dist()
