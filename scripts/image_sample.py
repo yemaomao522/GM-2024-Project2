@@ -43,7 +43,7 @@ def main():
         model_kwargs = {}
         if args.class_cond:
             classes = th.randint(
-                low=0, high=NUM_CLASSES, size=(args.batch_size,), device=dist_util.dev()
+                low=0, high=12, size=(args.batch_size,), device=dist_util.dev()
             )
             model_kwargs["y"] = classes
         sample_fn = (
