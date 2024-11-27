@@ -10,6 +10,7 @@ import numpy as np
 import torch as th
 import torch.distributed as dist
 
+from PIL import Image
 from improved_diffusion import dist_util, logger
 from improved_diffusion.script_util import (
     NUM_CLASSES,
@@ -18,6 +19,15 @@ from improved_diffusion.script_util import (
     add_dict_to_argparser,
     args_to_dict,
 )
+
+
+def transfer01(image: np.ndarray):
+    """Transfer a 0~255 3-channel image into a 0-or-255 (black-white) 1-channel image.
+    Args:
+        image (ndarray): an image of shape HxWx3, with values in 0~255. 
+    """
+    avg_image = np.mean(image.astype(np.float32), axis=2)
+    return np.where(avg_image > 200, 255, 0).astype(np.uint8)
 
 
 def main():
@@ -81,6 +91,10 @@ def main():
         logger.log(f"saving to {out_path}")
         if args.class_cond:
             np.savez(out_path, arr, label_arr)
+            for i in range(arr.shape[0]):
+                image = transfer01(arr[i])
+                image = Image.fromarray(image)
+                image.save(os.path.join(logger.get_dir(), f"output_{label_arr[i].item()}_{i}.png"))
         else:
             np.savez(out_path, arr)
 
