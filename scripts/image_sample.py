@@ -27,7 +27,7 @@ def transfer01(image: np.ndarray):
         image (ndarray): an image of shape HxWx3, with values in 0~255. 
     """
     avg_image = np.mean(image.astype(np.float32), axis=2)
-    return np.where(avg_image > 200, 255, 0).astype(np.uint8)
+    return np.where(avg_image > 220, 255, 0).astype(np.uint8)
 
 
 def main():
@@ -49,11 +49,11 @@ def main():
     logger.log("sampling...")
     all_images = []
     all_labels = []
-    while len(all_images) * args.batch_size < args.num_samples:
+    for label in range(12):
         model_kwargs = {}
         if args.class_cond:
             classes = th.randint(
-                low=0, high=12, size=(args.batch_size,), device=dist_util.dev()
+                low=label, high=label + 1, size=(args.batch_size,), device=dist_util.dev()
             )
             model_kwargs["y"] = classes
         sample_fn = (
@@ -94,6 +94,7 @@ def main():
             for i in range(arr.shape[0]):
                 image = transfer01(arr[i])
                 image = Image.fromarray(image)
+                image = image.resize((image.width * 4, image.height * 4), Image.LANCZOS)
                 image.save(os.path.join(logger.get_dir(), f"output_{label_arr[i].item()}_{i}.png"))
         else:
             np.savez(out_path, arr)
